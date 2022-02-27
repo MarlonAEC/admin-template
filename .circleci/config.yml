@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  slack: circleci/slack@4.8.3
 jobs:
   build:
     docker:
@@ -7,12 +9,27 @@ jobs:
     working_directory: ~/repo
     steps:
       - checkout
-
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "package.json" }}
             - v1-dependencies-
-
+      - slack/notify:
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "plain_text",
+                      "text": "Running pipeline for Admin Dashboard",
+                      "emoji": true
+                    }
+                  ]
+                }
+              ]
+            }
+          event: always
       - run: yarn install
 
       - save_cache:
@@ -23,3 +40,11 @@ jobs:
           key: v1-dependencies-{{ checksum "package.json" }}
       - run: yarn lint
       - run: yarn test
+      - slack/notify:
+          channel: circle-ci
+          event: fail
+          template: basic_fail_1
+      - slack/notify:
+          channel: circle-ci
+          event: pass
+          template: success_tagged_deploy_1
